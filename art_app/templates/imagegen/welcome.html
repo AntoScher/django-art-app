@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Добро пожаловать</title>
+    <!-- Подключаем Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .welcome-container {
+            margin-top: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container welcome-container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                <h1 class="display-4">Добро пожаловать на сервис генерации изображений</h1>
+                <p class="lead">Создавайте уникальные изображения на основе вашего описания с помощью искусственного интеллекта.</p>
+                <hr class="my-4">
+                <p>Чтобы начать работу, войдите в систему или зарегистрируйтесь.</p>
+                <a class="btn btn-primary btn-lg mx-2" href="{% url 'login' %}" role="button">Войти</a>
+                <a class="btn btn-success btn-lg mx-2" href="{% url 'signup' %}" role="button">Зарегистрироваться</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключаем Bootstrap JS и зависимости -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

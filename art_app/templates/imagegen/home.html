@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Генерация изображений</title>
+    <!-- Подключаем Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .gallery-item img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигационная панель -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+       <a class="navbar-brand" href="#">Сервис генерации изображений</a>
+       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+         <span class="navbar-toggler-icon"></span>
+       </button>
+       <div class="collapse navbar-collapse" id="navbarNav">
+         <ul class="navbar-nav ml-auto">
+           <li class="nav-item">
+             <span class="nav-link font-weight-bold">{{ request.user.username }}</span>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="{% url 'logout' %}">Выйти</a>
+           </li>
+         </ul>
+       </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Блок с описанием -->
+        <div class="jumbotron">
+            <h1 class="display-4">Генерация изображений</h1>
+            <p class="lead">Введите описание изображения и нажмите кнопку "Сгенерировать", чтобы создать уникальное изображение с помощью искусственного интеллекта.</p>
+        </div>
+
+        <!-- Форма генерации -->
+        <div class="mb-4">
+            <form method="post" id="generate-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    {{ form.prompt.label_tag }}
+                    {{ form.prompt }}
+                </div>
+                <button type="submit" class="btn btn-primary" id="generate-button">Сгенерировать</button>
+            </form>
+            <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Генерация...</span>
+                </div>
+                <p>Генерация изображения...</p>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- Галерея изображений -->
+        <h2>Моя галерея</h2>
+        {% if images %}
+            <div class="row">
+                {% for image in images %}
+                    <div class="col-md-4 gallery-item mb-4">
+                        <div class="card">
+                            <img src="{{ image.image_data }}" class="card-img-top" alt="{{ image.prompt }}">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ image.prompt }}</h5>
+                                <p class="card-text">
+                                    <small class="text-muted">{{ image.created_at|date:"d M Y H:i" }}</small>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">У вас пока нет сгенерированных изображений. Введите описание выше, чтобы начать!</p>
+        {% endif %}
+    </div>
+
+    <!-- Подключаем Bootstrap JS и зависимости -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let generateForm = document.getElementById("generate-form");
+            let generateButton = document.getElementById("generate-button");
+            let loadingSpinner = document.querySelector(".loading-spinner");
+
+            // Проверяем, есть ли активная генерация
+            let generationStatus = "{{ generation_status }}";
+            if (generationStatus === "pending") {
+                disableForm();
+                checkStatus();
+            }
+
+            generateForm.addEventListener("submit", function (event) {
+                disableForm();
+            });
+
+            function disableForm() {
+                generateButton.disabled = true;
+                loadingSpinner.style.display = "block";
+            }
+
+            function enableForm() {
+                generateButton.disabled = false;
+                loadingSpinner.style.display = "none";
+            }
+
+            function checkStatus() {
+                fetch('/notify/')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "ok") {
+                            location.reload();
+                        } else {
+                            setTimeout(checkStatus, 5000);
+                        }
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
