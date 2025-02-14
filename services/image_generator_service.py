@@ -1,19 +1,22 @@
 import json
+import os
+
 import asyncio
 import aiohttp
 from aiohttp import web
+from dotenv import load_dotenv
 
-DJANGO_SERVER_URL = "http://127.0.0.1:8000/notify"  # Django URL для уведомления
+load_dotenv()
+
+DJANGO_SERVER_URL = "http://127.0.0.1:8000/notify/"  # Django URL для уведомления
 FUSIONBRAIN_URL = "https://api-key.fusionbrain.ai/"
-API_KEY = '89EE7FEBBFD40F7F54F70D55876756FC'
-SECRET_KEY = '3ABFB332E4DB01045608AF5DE67ADB03'
 
 class Text2ImageAPI:
     def __init__(self):
         self.URL = FUSIONBRAIN_URL
         self.AUTH_HEADERS = {
-            'X-Key': f'Key {API_KEY}',
-            'X-Secret': f'Secret {SECRET_KEY}',
+            'X-Key': f'Key {os.getenv("API_KEY")}',
+            'X-Secret': f'Secret {os.getenv("SECRET_KEY")}',
         }
 
     async def get_model(self):
@@ -45,7 +48,7 @@ class Text2ImageAPI:
                 data=form_data
             ) as response:
                 data = await response.json()
-                if response.status != 200:
+                if response.status != 201:
                     print(f"Ошибка генерации: {data}")
                     return None
                 return data.get('uuid')
@@ -61,12 +64,14 @@ class Text2ImageAPI:
                         print(f"Ошибка проверки статуса: {data}")
                         return None
                     if data.get('status') == 'DONE':
-                        return data.get('images')
+                        images = data.get('images')
+                        return images
                 print(f"Ожидание генерации... Осталось попыток: {attempts}")
                 await asyncio.sleep(delay)
                 attempts -= 1
         print("Генерация не удалась, превышено число попыток.")
         return None
+
 
 async def generate_image(request):
     data = await request.json()
@@ -84,19 +89,25 @@ async def generate_image(request):
 
     # Отправляем Django uuid, чтобы он мог следить за генерацией
     async with aiohttp.ClientSession() as session:
-        await session.post(DJANGO_SERVER_URL, json={"user_id": user_id, "uuid": request_id, "prompt": prompt})
+        async with session.post(DJANGO_SERVER_URL, json={"user_id": user_id, "uuid": request_id, "prompt": prompt}) as response:
+            print(f"[aiohttp] Отправлен UUID в Django: {await response.text()}")
 
     # Ждём генерацию
     images = await fusion_api.check_generation(request_id)
     if not images:
         async with aiohttp.ClientSession() as session:
-            await session.post(DJANGO_SERVER_URL, json={"user_id": user_id, "error": "Генерация не удалась"})
+            async with session.post(DJANGO_SERVER_URL, json={"user_id": user_id, "error": "Генерация не удалась"}) as response:
+                print(f"[aiohttp] Ошибка генерации, отправлена в Django: {await response.text()}")
         return web.json_response({"status": "failed"})
 
+    # **ПРАВИЛЬНЫЙ ФОРМАТ `image_data`** (теперь массив!)
     async with aiohttp.ClientSession() as session:
-        await session.post(DJANGO_SERVER_URL, json={"user_id": user_id, "prompt": prompt, "image_data": images[0]})
+        async with session.post(DJANGO_SERVER_URL, json={"user_id": user_id, "prompt": prompt, "image_data": [images[0]]}) as response:
+            print(f"[aiohttp] Изображение отправлено в Django: {await response.text()}")
+
 
     return web.json_response({"status": "completed"})
+
 
 app = web.Application()
 app.router.add_post("/generate", generate_image)
