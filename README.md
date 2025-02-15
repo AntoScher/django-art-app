@@ -31,9 +31,9 @@ pip install -r requirements.txt
 ### 4. Настройка переменных окружения
 Создай файл `.env` в корневой папке проекта и добавь в него:
 ```env
-DJANGO_SECRET_KEY='django-insecure-4p$em_66nto*#l-)^_$#88xlh%(r(_nxg&#1k!fkase2h1%a*2'
-API_KEY='89EE7FEBBFD40F7F54F70D55876756FC'
-SECRET_KEY='3ABFB332E4DB01045608AF5DE67ADB03'
+DJANGO_SECRET_KEY='сюда секретный ключ из Django'
+API_KEY='api ключ бесплатно возьмите на fusion brain от АИРИ'
+SECRET_KEY='secret ключ бесплатно возьмите на fusion brain от АИРИ'
 ```
 
 ### 5. Применение миграций
